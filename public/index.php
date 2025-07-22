@@ -10,3 +10,4 @@ use App\Core\Router;
 
 Router::resolve($routes);
 
+echo 'les gens nous y est ';
