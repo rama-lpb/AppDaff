@@ -1,5 +1,9 @@
-vendor
-node_modules
-.env
-Dockerfile
-docker-compose.yml
+/vendor/
+/node_modules/
+/.env
+*.log
+*.zip
+.DS_Store
+.idea/
+/*.sqlite
+
