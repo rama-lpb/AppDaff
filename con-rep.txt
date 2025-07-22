@@ -1,0 +1,4 @@
+mysql -h 127.0.0.1 -P 3307 -u user -p
+*connexion root : 
+docker exec -it mysql_db mysql -u root -p
+# puis tape le mot de passe : passer

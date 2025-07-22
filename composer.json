@@ -1,0 +1,30 @@
+{
+    "name": "manica/projet",
+    "description": "challenge a refaire",
+    "autoload": {
+        "psr-4": {
+            "App\\Entity\\": "src/entity",
+            "App\\Enums\\": "src/enums",
+            "App\\Core\\": "app/core",
+            "App\\Core\\Abstract\\": "app/core/abstract",
+            "App\\Controlleur\\": "src/controlleurs",
+            "App\\Repository\\": "src/repository",
+            "App\\Service\\": "src/services"
+
+        }
+    },
+    "scripts": 
+    {
+       "migrate": "php migrations/Migration.php",
+        "seeder": "php seeders/Seeder.php"
+    },
+    "authors": [
+        {
+            "name": "manica"
+        }
+    ],
+    "require": {
+        "vlucas/phpdotenv": "^5.6",
+        "cloudinary/cloudinary_php": "^3.1"
+    }
+}

@@ -1,0 +1,59 @@
+- cloudinary   :: creer un compte ->  https://cloudinary.com/console
+
+- executer la commande : composer require cloudinary/cloudinary_php dans le terminal du projet 
+
+- recuperer le cloud name , l' api key  et l'api secret (necessite une authentification mail)
+
+- Dans app/config/cloudinary_php on met : 
+
+        return [
+            'cloud_name' => 'ton-nom-de-cloud',    
+            'api_key'    => '123456789012345',
+            'api_secret' => 'ta_cle_api_secret',
+        ];
+
+- puis on modifie le seeder pour quavant la connexion a la base on se connecte a cloudinary  en lui créant une nouvelle instance :
+            <?php
+
+            use Cloudinary\Cloudinary;
+            use Cloudinary\Configuration\Configuration;
+            use Dotenv\Dotenv;
+
+
+            require_once __DIR__ . '/../vendor/autoload.php';
+            $cloud = require __DIR__ . '/../app/config/cloudinary.php';
+
+
+            Configuration::instance([
+                'cloud' => [
+                    'cloud_name' => $cloud['cloud_name'],
+                    'api_key'    => $cloud['api_key'],
+                    'api_secret' => $cloud['api_secret'],
+                ],
+                'url' => ['secure' => true]
+            ]);
+
+            $cloudinary = new Cloudinary(Configuration::instance());
+
+- on creer un nouveau dossier image au meme nin=veau que les seeders 
+
+- puis on fait un upload des images et on creer les urls avant d'inserer dans la base : 
+        foreach ($citoyens as $citoyen) {
+            try {
+                $imagePathRecto = __DIR__ . '/images/' . $citoyen['recto'];
+                $imagePathVerso = __DIR__ . '/images/' . $citoyen['verso'];
+
+                $uploadRecto = $cloudinary->uploadApi()->upload($imagePathRecto, ['folder' => 'cni/recto']);
+                $uploadVerso = $cloudinary->uploadApi()->upload($imagePathVerso, ['folder' => 'cni/verso']);
+
+                $urlRecto = $uploadRecto['secure_url'];
+                $urlVerso = $uploadVerso['secure_url'];
+
+                $stmt = $pdo->prepare("
+                    INSERT INTO citoyen (nom, prenom, date_naissance, lieu_naissance, numero_cni, photorecto, photoverso)
+                    VALUES (:nom, :prenom, :date_naissance, :lieu_naissance, :numero_cni, :photorecto, :photoverso)
+                ");
+
+            }
+            }
+- A present il suffit de rafraichir la page de cloudinary et d'acceder a media librairy ou asset pour voir les images 

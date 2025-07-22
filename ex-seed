@@ -1,0 +1,98 @@
+<?php
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Dotenv\Dotenv;
+
+// Chargement des variables d'environnement
+$envPath = __DIR__ . '/../.env';
+if (!file_exists($envPath)) {
+    die("❌ Fichier .env introuvable à : $envPath\n");
+}
+
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
+// Vérification des variables obligatoires
+$requiredVars = ['DSN', 'DB_USER', 'DB_PASSWORD'];
+foreach ($requiredVars as $var) {
+    if (empty($_ENV[$var])) {
+        die("❌ Variable d'environnement manquante : $var\n");
+    }
+}
+
+// Connexion à la base de données
+try {
+    echo "🔗 Tentative de connexion avec DSN : {$_ENV['DSN']}\n";
+    echo "👤 Utilisateur : {$_ENV['DB_USER']}\n\n";
+
+    $pdo = new PDO($_ENV['DSN'], $_ENV['DB_USER'], $_ENV['DB_PASSWORD']);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    echo "✅ Connexion réussie à la base de données\n\n";
+} catch (PDOException $e) {
+    echo "❌ Connexion échouée : " . $e->getMessage() . "\n";
+/*     echo "💡 Vérifiez : DSN, identifiants, port PostgreSQL (5433), et l'extension php-pgsql\n";
+ */    die();
+}
+
+try {
+    $pdo->beginTransaction();
+
+    $check1 = $pdo->query("SELECT 1 FROM information_schema.tables WHERE table_name = 'citoyen'");
+    $check2 = $pdo->query("SELECT 1 FROM information_schema.tables WHERE table_name = 'journalisation'");
+    if (!$check1->fetch() || !$check2->fetch()) {
+        throw new Exception("❌ Tables `citoyen` ou `journalisation` manquantes.");
+    }
+
+    echo "✅ Tables disponibles\n";
+
+    // Insertion dans citoyen
+    $stmtCitoyen = $pdo->prepare("INSERT INTO citoyen (nom, prenom, date_naissance, lieu_naissance, numero_cni, photorecto, photoverso)
+                                  VALUES (?, ?, ?, ?, ?, ?, ?)");
+
+    $citoyens = [
+        ['Gueye', 'Ramatoulaye', '2003-05-12', 'Dakar', 'CNI1001', 'recto1.png', 'verso1.png'],
+        ['Ndour', 'Moussa', '1998-11-04', 'Thiès', 'CNI1002', 'recto2.png', 'verso2.png'],
+        ['Sow', 'Awa', '1995-07-22', 'Kaolack', 'CNI1003', 'recto3.png', 'verso3.png'],
+        ['Fall', 'Cheikh', '2000-01-15', 'Saint-Louis', 'CNI1004', 'recto4.png', 'verso4.png'],
+        ['Diop', 'Aminata', '1999-03-30', 'Ziguinchor', 'CNI1005', 'recto5.png', 'verso5.png'],
+        ['Thiam', 'Ibrahima', '1997-09-17', 'Kolda', 'CNI1006', 'recto6.png', 'verso6.png'],
+        ['Camara', 'Fatou', '2001-12-02', 'Fatick', 'CNI1007', 'recto7.png', 'verso7.png'],
+        ['Ba', 'Mamadou', '1996-08-08', 'Tambacounda', 'CNI1008', 'recto8.png', 'verso8.png'],
+    ];
+
+    $citoyenIds = [];
+    foreach ($citoyens as $citoyen) {
+        $stmtCitoyen->execute($citoyen);
+        $citoyenIds[] = $pdo->lastInsertId();
+    }
+    echo "✅ Données insérées dans `citoyen`\n";
+
+    // Insertion dans journalisation
+    $stmtJournal = $pdo->prepare("INSERT INTO journalisation (localisation, ip, statut, id_citoyen)
+                                  VALUES (?, ?, ?, ?)");
+
+    $journaux = [
+        ['Dakar', '192.168.1.1', 'success', $citoyenIds[0]],
+        ['Thiès', '192.168.1.2', 'echec', $citoyenIds[1]],
+        ['Kaolack', '192.168.1.3', 'success', $citoyenIds[2]],
+        ['Saint-Louis', '192.168.1.4', 'echec', $citoyenIds[3]],
+        ['Ziguinchor', '192.168.1.5', 'success', $citoyenIds[4]],
+        ['Kolda', '192.168.1.6', 'echec', $citoyenIds[5]],
+        ['Fatick', '192.168.1.7', 'success', $citoyenIds[6]],
+        ['Tambacounda', '192.168.1.8', 'echec', $citoyenIds[7]],
+    ];
+
+    foreach ($journaux as $journal) {
+        $stmtJournal->execute($journal);
+    }
+
+    echo "✅ Données insérées dans `journalisation`\n";
+
+    $pdo->commit();
+    echo "🎉 Toutes les données ont été insérées avec succès.\n";
+
+} catch (Exception $e) {
+    $pdo->rollBack();
+    die("❌ Erreur : " . $e->getMessage());
+}
